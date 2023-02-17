@@ -1,16 +1,17 @@
-========================================
-TeamName: AAAA
-ChallengeName: BBBB
-DeployFunds: CCCC
-Creation: 2023-02-DD
-Difficulty: EEEE
-========================================
+> ========================================
+> TeamName: AAAA
+> ChallengeName: BBBB
+> DeployFunds: CCCC
+> Creation: 2023-02-DD
+> Difficulty: EEEE
+> ========================================
 
 1. Update the metadata above (AAAA-EEEE). Note: CCCC = 0 if you don't need any initial
    fund, otherwise, specify in wei.
 
 2. Check what's in the repo:
 
+~~~
   ├── contracts
   │   ├── ChallengeName.sol         # FFFF. main challenge
   │   ├── ChallengeNameFactory.sol  # GGGG. factory to deploy and check the challenge
@@ -20,7 +21,8 @@ Difficulty: EEEE
   │   ├── exploit.py                # IIII. your solution and script to check if it's working
   │   └── pwn.py                    # utils. don't touch
   ├── README.md                     # JJJJ. this file!
-  
+~~~
+
 3. If you run scripts/exploit.py, it deploys the challenge and checks if it's working.
 
 ~~~{.sh}
@@ -62,12 +64,10 @@ Difficulty: EEEE
 6. Add your solution to (IIII)
 6. Describe your challenge in README.md below!
 
-========================================
-ChallengeName
-========================================
+# ChallengeName
 
 How can you send 3 gwei to a smart contract? One via MetaMask, one via geth, and
 one via web3.js.
 
-# NOTE. this will release the code (ChallengeName.sol)!
+; NOTE. this will release the code (ChallengeName.sol)!
 <CODE>
