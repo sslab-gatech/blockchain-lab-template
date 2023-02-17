@@ -1,10 +1,10 @@
-> ========================================
-> TeamName: AAAA
-> ChallengeName: BBBB
-> DeployFunds: CCCC
-> Creation: 2023-02-DD
-> Difficulty: EEEE
-> ========================================
+~~~
+TeamName: AAAA
+ChallengeName: BBBB
+DeployFunds: CCCC
+Creation: 2023-02-DD
+Difficulty: EEEE
+~~~
 
 1. Update the metadata above (AAAA-EEEE). Note: CCCC = 0 if you don't need any initial
    fund, otherwise, specify in wei.
