@@ -1,73 +1,180 @@
 ~~~
-TeamName: AAAA
-ChallengeName: BBBB
-DeployFunds: CCCC
+TeamName: DifiPwny
+ChallengeName: Safe NFT
+DeployFunds: 0
+Creation: 2022-12-20
+Difficulty: 3
+
+ChallengeName: Vending Machine
+DeployFunds: 1 gwei
+Creation: 2022-07-24
+Difficulty: 3
+
+ChallengeName: AAAA
+DeployFunds: BBBB
 Creation: 2023-02-DD
 Difficulty: EEEE
 ~~~
 
-1. Update the metadata above (AAAA-EEEE). Note: CCCC = 0 if you don't need any initial
-   fund, otherwise, specify in wei.
+# SafeNFT
+"Often something that appears safe isn't safe at all." 
+OBJECTIVE: Claim 2 NFTs for the price of one.
+```
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.7.0 <0.9.0;
 
-2. Check what's in the repo:
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
-~~~
-  ├── contracts
-  │   ├── ChallengeName.sol         # FFFF. main challenge
-  │   ├── ChallengeNameFactory.sol  # GGGG. factory to deploy and check the challenge
-  │   └── Level.sol                 # interface. don't touch
-  ├── scripts
-  │   ├── deploy.py                 # HHHH. for deployment to the chain
-  │   ├── exploit.py                # IIII. your solution and script to check if it's working
-  │   └── pwn.py                    # utils. don't touch
-  ├── README.md                     # JJJJ. this file!
-~~~
+contract SafeNFT is ERC721Enumerable {
+    uint256 price;
+    mapping(address => bool) public canClaim;
+    address public owner;
 
-3. If you run scripts/exploit.py, it deploys the challenge and checks if it's working.
+    constructor(address _player) 
+        ERC721("Safe Token", "SNFT") {
+        price = 1 gwei;
 
-~~~{.sh}
-  $ brownie run scripts/exploit.py
-  Brownie v1.19.2 - Python development framework for Ethereum
-  
-  BlockchainLabTemplateProject is the active project.
-  
-  Launching 'ganache-cli --chain.vmErrorsOnRPCResponse true ...' ...
-  
-  Running 'scripts/exploit.py::main'...
-  Transaction sent: 0xb20f4e89842b4fd3e55ba4125d2585ea5f255eec6713ab05a4cfee546749365d
-    Gas price: 0.0 gwei   Gas limit: 12000000   Nonce: 0
-    ChallengeNameFactory.constructor confirmed   Block: 1   Gas used: 276723 (2.31%)
-    ChallengeNameFactory deployed at: 0xe7CB1c67752cBb975a56815Af242ce2Ce63d3113
-  
-  Transaction sent: 0x32cc8dfd4d521cf6076a951118a4545490d4afc33b7c4d3265d530df0707033b
-    Gas price: 0.0 gwei   Gas limit: 12000000   Nonce: 1
-    ChallengeNameFactory.createInstance confirmed   Block: 2   Gas used: 145171 (1.21%)
-  
-  player  : 0x66aB6D9362d4F35596279692F0251Db635165871
-  factory : 0xe7CB1c67752cBb975a56815Af242ce2Ce63d3113
-  instance: 0x90d1ec7E45556577d8C68a77A7E1d2813BAb6C56
-  Transaction sent: 0x8897b4b71023b61cf6c82ec94fb72d633f15f26de47e87200a6e7aa5aa947c0a
-    Gas price: 0.0 gwei   Gas limit: 12000000   Nonce: 0
-    Transaction confirmed   Block: 3   Gas used: 21055 (0.18%)
+        owner = _player;
+    }
 
-*
-* [!] Solved
-*
+    function buyNFT() external payable {
+        require(price == msg.value, "INVALID_VALUE");
+        canClaim[msg.sender] = true;
+    }
 
-  Terminating local RPC client...
-~~~
+    function claim() external {
+        require(canClaim[msg.sender], "CANT_MINT");
+        _safeMint(msg.sender, totalSupply());
+        canClaim[msg.sender] = false;
+    }
 
-4. "ChallengeName" -> a unique challenge name (FFFF, GGGG, HHHH, IIII, JJJJ). And see
-   if it's still working.
+    function withdraw() public {
+        require(msg.sender == owner);
+        payable(msg.sender).transfer(address(this).balance);
+    }
 
-5. Design your challenge and a way to deploy (FFFF, GGGG)!
-6. Add your solution to (IIII)
-6. Describe your challenge in README.md below!
+    function completed() public view returns (bool) {
+        return balanceOf(owner) == 2;
+    }
+}
+```
 
-# ChallengeName
+# Vending Machine
 
-How can you send 3 gwei to a smart contract? One via MetaMask, one via geth, and
-one via web3.js.
+For this challenge, you have to deal only with a single Smart Contract called VendingMachine, a simple contract that models after a vending machine that provides only peanuts
+At deployment time the contract is funded with some ether and your goal is to drain it from the whole balance.
+#### HINT: Focus on the withdrawal function :)
+   
+```
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.7.0 <0.9.0;
 
-; NOTE. this will release the code (ChallengeName.sol)!
-<CODE>
+contract VendingMachine {
+    address public owner;
+    uint256 private reserve;
+    bool private txCheckLock;
+    mapping(address => uint256) public peanuts;
+    mapping(address => uint256) public consumersDeposit;
+
+    constructor(address player) payable {
+        require(
+            msg.value >= 1 gwei,
+            "You need a minimum of reserve of 1 gwei before deploying the contract"
+        );
+
+        owner = player;
+        reserve = msg.value;
+        peanuts[address(this)] = 2000;
+        txCheckLock = false;
+    }
+
+    function isExtContract(address _addr) private view returns (bool) {
+        uint32 _codeSize;
+
+        assembly {
+            _codeSize := extcodesize(_addr)
+        }
+        return (_codeSize > 0 || _addr != tx.origin);
+    }
+
+
+    modifier isStillValid() {
+        require(!txCheckLock, "Sorry, this product project has been hacked");
+        _;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Ownable: caller is not the owner");
+        _;
+    }
+
+    function getPeanutsBalance() public view returns (uint256) {
+        return peanuts[address(this)];
+    }
+
+    function getMyBalance() public view returns (uint256) {
+        return consumersDeposit[msg.sender];
+    }
+
+    function getContractBalance() public view returns (uint256) {
+        return address(this).balance;
+    }
+
+    function getReserveAmount() public view onlyOwner returns (uint256) {
+        return reserve;
+    }
+
+    function deposit() public payable isStillValid {
+        require(
+            msg.value >= 0.1 gwei,
+            "You must have at least 0.1 gwei to initiate transaction"
+        );
+        consumersDeposit[msg.sender] += msg.value;
+    }
+
+    function getPeanuts(uint256 units) public isStillValid {
+        require(
+            consumersDeposit[msg.sender] >= units * 0.1 gwei,
+            "You must pay at least 0.1 gwei per peanutToken"
+        );
+        require(
+            peanuts[address(this)] >= units,
+            "Not enough peanuts to fulfill the purchase request"
+        );
+
+        consumersDeposit[msg.sender] -= units * 0.1 gwei; // Debits caller's deposit
+        peanuts[address(this)] -= units; // Reduce the amount purchased from the peanuts stock
+        peanuts[msg.sender] += units; //  Credits the caller with amount of peanuts purchased
+    }
+
+    function withdrawal() public isStillValid {
+        uint256 contractBalanceBeforeTX = getContractBalance();
+        uint256 balance = consumersDeposit[msg.sender];
+        uint256 finalContractBalance = contractBalanceBeforeTX - balance;
+
+        require(balance > 0, "Insufficient balance");
+
+        (bool sent, ) = msg.sender.call{value: balance}("");
+        require(sent, "Failed to send ether");
+
+        consumersDeposit[msg.sender] = 0;
+
+        uint256 contractBalanceAfterTX = getContractBalance();
+
+        if (
+            (contractBalanceAfterTX < finalContractBalance) &&
+            isExtContract(msg.sender)
+        ) {
+            txCheckLock = true;
+        }
+    }
+
+    function restockPeanuts(uint256 _restockAmount) public onlyOwner {
+        peanuts[address(this)] += _restockAmount;
+    }
+
+    function hasNotBeenHacked() public view onlyOwner returns (bool) {
+        return !txCheckLock;
+    }
+}
+```
